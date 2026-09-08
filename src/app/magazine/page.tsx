@@ -19,14 +19,29 @@ import {
   HardDrive,
 } from "lucide-react";
 
+interface MagazineItem {
+  id: string;
+  title: string;
+  edition: string;
+  category: string;
+  date: string;
+  pages: string;
+  directorate: string;
+  editor: string;
+  driveUrl: string;
+  summary: string;
+  highlights?: string[];
+  isFeatured?: boolean;
+}
+
 export default function MagazinePage() {
-  const [magazinesList, setMagazinesList] = useState<any[]>(magazinesData);
+  const [magazinesList, setMagazinesList] = useState<MagazineItem[]>(magazinesData);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isFirebaseConfigured()) {
-      getFirestoreCollection<any>("magazines", magazinesData).then((data) => {
+      getFirestoreCollection<MagazineItem>("magazines", magazinesData).then((data) => {
         if (data && data.length > 0) {
           setMagazinesList(data);
         }
@@ -152,7 +167,7 @@ export default function MagazinePage() {
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
                       Featured Highlights
                     </span>
-                    {mag.highlights.slice(0, 3).map((item, idx) => (
+                    {mag.highlights.slice(0, 3).map((item: string, idx: number) => (
                       <div key={idx} className="flex items-start gap-2 text-[11px] text-slate-600 leading-tight">
                         <CheckCircle2 className="w-3.5 h-3.5 text-[#003B99] shrink-0 mt-0.5" />
                         <span className="line-clamp-1">{item}</span>

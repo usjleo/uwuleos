@@ -39,12 +39,30 @@ function CategoryIcon({ name, className }: { name?: string; className?: string }
   }
 }
 
+interface ProjectItem {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  directorate: string;
+  impactMetric: string;
+  date: string;
+  location: string;
+  status: string;
+  summary: string;
+  icon?: string;
+  volunteers?: string;
+  beneficiaries?: string;
+  highlights?: string[];
+  image?: string;
+}
+
 export default function FeaturedProjects() {
-  const [projectsList, setProjectsList] = useState<any[]>(projectsData);
+  const [projectsList, setProjectsList] = useState<ProjectItem[]>(projectsData);
 
   useEffect(() => {
     if (isFirebaseConfigured()) {
-      getFirestoreCollection<any>("projects", projectsData).then((data) => {
+      getFirestoreCollection<ProjectItem>("projects", projectsData).then((data) => {
         if (data && data.length > 0) {
           setProjectsList(data);
         }
@@ -148,7 +166,7 @@ export default function FeaturedProjects() {
                 {/* Highlights */}
                 {project.highlights && project.highlights.length > 0 && (
                   <div className="space-y-1.5 pt-1">
-                    {project.highlights.slice(0, 1).map((item, hIdx) => (
+                    {project.highlights.slice(0, 1).map((item: string, hIdx: number) => (
                       <div key={hIdx} className="flex items-start gap-2 text-[11px] text-slate-500 leading-tight">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                         <span className="line-clamp-1">{item}</span>
