@@ -16,6 +16,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { submitMembershipApplicant } from "@/lib/firebase";
+
 export default function JoinPage() {
   const { club } = useClub();
   const [formData, setFormData] = useState({
@@ -28,6 +30,7 @@ export default function JoinPage() {
     interests: [] as string[],
     motivation: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
@@ -40,8 +43,21 @@ export default function JoinPage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
+    await submitMembershipApplicant({
+      name: formData.fullName,
+      regNo: formData.regNo || "UWU/GEN/24/000",
+      faculty: formData.faculty,
+      academicYear: formData.academicYear,
+      email: formData.email,
+      phone: formData.phone,
+      interests: formData.interests.join(", ") + (formData.motivation ? ` | Motivation: ${formData.motivation}` : ""),
+    });
+
+    setIsSubmitting(false);
     setIsSubmitted(true);
   };
 

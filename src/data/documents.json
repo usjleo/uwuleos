@@ -1,0 +1,52 @@
+[
+  {
+    "id": "doc-1",
+    "title": "Leo Club of UWU Constitution & By-Laws",
+    "category": "Governance & Statutes",
+    "description": "Official club constitution, governance framework, election procedures, and membership duties accredited by Leo District 306 D10.",
+    "format": "PDF Document",
+    "size": "1.4 MB",
+    "driveUrl": "https://drive.google.com/file/d/1official-uwu-leo-constitution/view?usp=sharing",
+    "updatedAt": "2025/26 Leistic Year"
+  },
+  {
+    "id": "doc-2",
+    "title": "Undergraduate Membership Application Form",
+    "category": "Membership & Induction",
+    "description": "Official registration and profile submission form for prospective university undergraduate members.",
+    "format": "PDF / DOCX",
+    "size": "450 KB",
+    "driveUrl": "https://drive.google.com/file/d/1membership-application-template/view?usp=sharing",
+    "updatedAt": "October 2024"
+  },
+  {
+    "id": "doc-3",
+    "title": "Project Proposal & Budget Approval Template",
+    "category": "Project Management",
+    "description": "Standardized project proposal blueprint including executive summary, committee roster, action timeline, and itemized budget estimates.",
+    "format": "DOCX Document",
+    "size": "380 KB",
+    "driveUrl": "https://drive.google.com/file/d/1project-proposal-budget-template/view?usp=sharing",
+    "updatedAt": "November 2024"
+  },
+  {
+    "id": "doc-4",
+    "title": "Post-Project Evaluation & Accountability Report",
+    "category": "Reporting & Auditing",
+    "description": "Mandatory project completion reporting template detailing community impact metrics, verified expenditure, and photo documentation.",
+    "format": "DOCX Document",
+    "size": "320 KB",
+    "driveUrl": "https://drive.google.com/file/d/1post-project-evaluation-report/view?usp=sharing",
+    "updatedAt": "November 2024"
+  },
+  {
+    "id": "doc-5",
+    "title": "Fieldwork & Volunteer Activity Consent Form",
+    "category": "Safety & Compliance",
+    "description": "Standard volunteer participation and travel consent form for university field trips, disaster relief, and outstation medical drives.",
+    "format": "PDF Document",
+    "size": "210 KB",
+    "driveUrl": "https://drive.google.com/file/d/1fieldwork-consent-form-template/view?usp=sharing",
+    "updatedAt": "January 2025"
+  }
+]

@@ -13,15 +13,17 @@ import {
   Calendar,
   Image as ImageIcon,
   PhoneCall,
+  Download,
+  FileText,
 } from "lucide-react";
 import { UwuLeoOfficialLogo, UwuLeoEmblem } from "@/components/ui/BrandingLogos";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
-  const [eventsOpen, setEventsOpen] = useState(false);
+  const [downloadsOpen, setDownloadsOpen] = useState(false);
   const [mobileAboutOpen, setMobileAboutOpen] = useState(false);
-  const [mobileEventsOpen, setMobileEventsOpen] = useState(false);
+  const [mobileDownloadsOpen, setMobileDownloadsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   // Dynamic scroll listener
@@ -133,62 +135,62 @@ export default function Navbar() {
               Projects
             </Link>
 
-            {/* 3. Events Dropdown */}
+            {/* 3. Events Link */}
+            <Link
+              href="/events"
+              className="px-3 py-2 rounded-xl text-slate-700 hover:text-[#003B99] hover:bg-slate-50 transition-all duration-150 whitespace-nowrap"
+            >
+              Events
+            </Link>
+
+            {/* 4. Downloads Dropdown */}
             <div
               className="relative"
-              onMouseEnter={() => setEventsOpen(true)}
-              onMouseLeave={() => setEventsOpen(false)}
+              onMouseEnter={() => setDownloadsOpen(true)}
+              onMouseLeave={() => setDownloadsOpen(false)}
             >
               <button
                 type="button"
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-slate-700 hover:text-[#003B99] hover:bg-slate-50 transition-all duration-150 whitespace-nowrap"
               >
-                <span>Events</span>
+                <span>Downloads</span>
                 <ChevronDown
                   className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-                    eventsOpen ? "rotate-180 text-[#003B99]" : ""
+                    downloadsOpen ? "rotate-180 text-[#003B99]" : ""
                   }`}
                 />
               </button>
 
-              {eventsOpen && (
-                <div className="absolute top-full left-0 w-68 bg-white/95 backdrop-blur-xl rounded-xl shadow-xl shadow-slate-900/5 border border-slate-100 p-2 animate-in fade-in slide-in-from-top-2 duration-150 z-50 space-y-1">
+              {downloadsOpen && (
+                <div className="absolute top-full left-0 w-72 bg-white/95 backdrop-blur-xl rounded-xl shadow-xl shadow-slate-900/5 border border-slate-100 p-2 animate-in fade-in slide-in-from-top-2 duration-150 z-50 space-y-1">
                   <Link
-                    href="/events"
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 text-slate-800 hover:text-[#003B99] transition-colors group/item"
+                    href="/magazine"
+                    className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 text-slate-800 hover:text-[#003B99] transition-colors group/item"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 group-hover/item:bg-blue-600 group-hover/item:text-white transition-colors">
-                      <Calendar className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#003B99] flex items-center justify-center shrink-0 mt-0.5 group-hover/item:bg-[#003B99] group-hover/item:text-white transition-colors">
+                      <BookOpen className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-semibold text-sm leading-tight">Upcoming Events</div>
-                      <div className="text-[11px] text-slate-500 font-normal mt-0.5">Workshops, camps &amp; ceremonies</div>
+                      <div className="font-semibold text-sm leading-tight">Leo Magazine</div>
+                      <div className="text-[11px] text-slate-500 font-normal mt-0.5">Annual reviews &amp; periodicals</div>
                     </div>
                   </Link>
 
                   <Link
-                    href="/events#bulletins"
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 text-slate-800 hover:text-[#003B99] transition-colors group/item"
+                    href="/brand-and-forms"
+                    className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 text-slate-800 hover:text-[#003B99] transition-colors group/item"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-cyan-50 text-cyan-700 flex items-center justify-center shrink-0 mt-0.5 group-hover/item:bg-cyan-600 group-hover/item:text-white transition-colors">
-                      <BookOpen className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 mt-0.5 group-hover/item:bg-amber-600 group-hover/item:text-white transition-colors">
+                      <Download className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-semibold text-sm leading-tight">E-Bulletins &amp; News</div>
-                      <div className="text-[11px] text-slate-500 font-normal mt-0.5">Quarterly publications</div>
+                      <div className="font-semibold text-sm leading-tight">Official Brand &amp; Forms</div>
+                      <div className="text-[11px] text-slate-500 font-normal mt-0.5">Logos, guidelines &amp; templates</div>
                     </div>
                   </Link>
                 </div>
               )}
             </div>
-
-            {/* 4. Magazine Link */}
-            <Link
-              href="/magazine"
-              className="px-3 py-2 rounded-xl text-slate-700 hover:text-[#003B99] hover:bg-slate-50 transition-all duration-150 whitespace-nowrap"
-            >
-              Magazine
-            </Link>
 
             {/* 5. Contact Link */}
             <Link
@@ -290,59 +292,59 @@ export default function Navbar() {
               <span>Projects</span>
             </Link>
 
-            {/* 3. Events (Accordion with sub-items) */}
+            {/* 3. Events */}
+            <Link
+              href="/events"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-800 hover:bg-white hover:text-[#003B99] transition-colors"
+            >
+              <Calendar className="w-4 h-4 text-leo-cyan shrink-0" />
+              <span>Events</span>
+            </Link>
+
+            {/* 4. Downloads (Accordion with sub-items) */}
             <div>
               <button
                 type="button"
-                onClick={() => setMobileEventsOpen(!mobileEventsOpen)}
+                onClick={() => setMobileDownloadsOpen(!mobileDownloadsOpen)}
                 className="w-full flex items-center justify-between px-4 py-3 rounded-xl font-semibold text-sm text-slate-800 hover:bg-white hover:text-[#003B99] transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <Calendar className="w-4 h-4 text-leo-cyan shrink-0" />
-                  <span>Events</span>
+                  <Download className="w-4 h-4 text-leo-cyan shrink-0" />
+                  <span>Downloads</span>
                 </div>
                 <ChevronDown
                   className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
-                    mobileEventsOpen ? "rotate-180 text-[#003B99]" : ""
+                    mobileDownloadsOpen ? "rotate-180 text-[#003B99]" : ""
                   }`}
                 />
               </button>
 
-              {mobileEventsOpen && (
+              {mobileDownloadsOpen && (
                 <div className="pl-11 pr-4 py-1.5 space-y-1 bg-white/70 rounded-xl mx-3 my-1 border border-slate-200/60">
                   <Link
-                    href="/events"
+                    href="/magazine"
                     onClick={() => {
                       setMobileMenuOpen(false);
-                      setMobileEventsOpen(false);
+                      setMobileDownloadsOpen(false);
                     }}
                     className="block py-2 text-xs font-semibold text-slate-700 hover:text-[#003B99] transition-colors"
                   >
-                    Upcoming Events
+                    Leo Magazine
                   </Link>
                   <Link
-                    href="/events#bulletins"
+                    href="/brand-and-forms"
                     onClick={() => {
                       setMobileMenuOpen(false);
-                      setMobileEventsOpen(false);
+                      setMobileDownloadsOpen(false);
                     }}
                     className="block py-2 text-xs font-semibold text-slate-700 hover:text-[#003B99] transition-colors"
                   >
-                    E-Bulletins &amp; News
+                    Official Brand &amp; Forms
                   </Link>
                 </div>
               )}
             </div>
-
-            {/* 4. Magazine */}
-            <Link
-              href="/magazine"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm text-slate-800 hover:bg-white hover:text-[#003B99] transition-colors"
-            >
-              <BookOpen className="w-4 h-4 text-leo-cyan shrink-0" />
-              <span>Magazine</span>
-            </Link>
 
             {/* 5. Contact */}
             <Link

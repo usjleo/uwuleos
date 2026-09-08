@@ -16,6 +16,8 @@ import {
   MessageSquare,
 } from "lucide-react";
 
+import { submitContactForm } from "@/lib/firebase";
+
 export default function ContactPage() {
   const { club } = useClub();
   const [formData, setFormData] = useState({
@@ -26,11 +28,22 @@ export default function ContactPage() {
     subject: "",
     message: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
+    await submitContactForm({
+      name: formData.name,
+      email: formData.email,
+      subject: `[${formData.inquiryType}] ${formData.subject || "Contact Form Inquiry"} (Phone: ${formData.phone || "N/A"})`,
+      message: formData.message,
+    });
+
+    setIsSubmitting(false);
     setSubmitted(true);
   };
 

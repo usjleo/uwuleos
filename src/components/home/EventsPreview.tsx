@@ -40,12 +40,12 @@ const NOTICES = [
   {
     id: "notice-4",
     ref: "UWU/LEO/2025-04",
-    date: "June 2025",
-    tag: "Official Publications",
-    title: "Publication of Leo District 306 D10 Quarterly E-Magazine (Q1)",
-    summary: "Comprehensive quarterly gazette featuring UWU undergraduate project achievements, provincial leadership milestones, and message from the District President.",
-    issuer: "Editorial & Media Cabinet",
-    link: "/events#bulletins",
+    date: "July 26, 2025",
+    tag: "Fellowship & Awards",
+    title: "Annual Leistic Installation & Undergraduate Fellowship Gala 2025",
+    summary: "Official installation ceremony of incoming Executive Board officers and celebration of outstanding humanitarian service achievements across Uva Province.",
+    issuer: "Secretariat & Organizing Council",
+    link: "/events",
   },
 ];
 
@@ -61,10 +61,10 @@ export default function EventsPreview() {
           <div>
             <CyanBar width="w-10" height="h-1" />
             <span className="block text-[10px] sm:text-[11px] font-bold tracking-[0.15em] text-slate-500 uppercase mb-1.5 sm:mb-2">
-              DISPATCHES &amp; GAZETTE
+              LATEST HAPPENINGS &amp; ANNOUNCEMENTS
             </span>
             <h2 className="font-heading font-extrabold text-2xl sm:text-3xl lg:text-4xl text-[#111827] tracking-tight">
-              Official Announcements &amp; News
+              Official Announcements &amp; Events
             </h2>
           </div>
 
@@ -72,7 +72,7 @@ export default function EventsPreview() {
             href="/events"
             className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#003B99] hover:text-[#00A3E0] transition-colors group py-1"
           >
-            <span>View All Communiques &amp; Bulletins</span>
+            <span>View All Events &amp; Calendar</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>

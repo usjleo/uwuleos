@@ -5,6 +5,7 @@ import Link from "next/link";
 import projectsData from "@/data/projects.json";
 import magazinesData from "@/data/magazines.json";
 import leadershipData from "@/data/leadership.json";
+import initialDocumentsData from "@/data/documents.json";
 import {
   Layers,
   Megaphone,
@@ -40,7 +41,14 @@ import {
   HardDrive,
   Download,
   Save,
+  FileText,
 } from "lucide-react";
+import {
+  isFirebaseConfigured,
+  getFirestoreCollection,
+  saveFirestoreDoc,
+  deleteFirestoreDoc,
+} from "@/lib/firebase";
 
 // Types
 interface Announcement {
@@ -83,6 +91,17 @@ interface MagazineItem {
   summary: string;
   highlights?: string[];
   isFeatured?: boolean;
+}
+
+interface DocumentItem {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  format: string;
+  size: string;
+  driveUrl: string;
+  updatedAt: string;
 }
 
 interface MemberApplicant {
@@ -195,12 +214,13 @@ export default function AdminPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Navigation Tab State
-  const [activeTab, setActiveTab] = useState<"overview" | "announcements" | "projects" | "magazines" | "members">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "announcements" | "projects" | "magazines" | "members" | "documents">("overview");
 
   // App Data State
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
   const [projects, setProjects] = useState<ProjectItem[]>(projectsData);
   const [magazines, setMagazines] = useState<MagazineItem[]>(magazinesData);
+  const [documents, setDocuments] = useState<DocumentItem[]>(initialDocumentsData);
   const [members, setMembers] = useState<MemberApplicant[]>(INITIAL_MEMBERS);
 
   // Search & Filter state
@@ -218,7 +238,11 @@ export default function AdminPage() {
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isMagazineModalOpen, setIsMagazineModalOpen] = useState(false);
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+
+  // Editing state for documents
+  const [editingDoc, setEditingDoc] = useState<DocumentItem | null>(null);
 
   // New Announcement Form State
   const [newAnnTitle, setNewAnnTitle] = useState("");
@@ -252,10 +276,19 @@ export default function AdminPage() {
   const [newMagSummary, setNewMagSummary] = useState("");
   const [newMagHighlights, setNewMagHighlights] = useState("");
 
+  // New Document / Form State
+  const [newDocTitle, setNewDocTitle] = useState("");
+  const [newDocCategory, setNewDocCategory] = useState("Governance & Statutes");
+  const [newDocFormat, setNewDocFormat] = useState("PDF Document");
+  const [newDocSize, setNewDocSize] = useState("");
+  const [newDocDriveUrl, setNewDocDriveUrl] = useState("");
+  const [newDocDescription, setNewDocDescription] = useState("");
+
   // Dynamic inline Google Drive URLs editor map
   const [driveUrlEdits, setDriveUrlEdits] = useState<Record<string, string>>({});
+  const [driveUrlDocEdits, setDriveUrlDocEdits] = useState<Record<string, string>>({});
 
-  // Check saved session on mount
+  // Check saved session, stored documents, and fetch Firestore cloud data on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = sessionStorage.getItem("uwu_leo_admin_auth");
@@ -263,8 +296,49 @@ export default function AdminPage() {
         setIsAuthenticated(true);
       }
       setIsCheckingAuth(false);
+
+      const storedDocs = localStorage.getItem("uwu_leos_documents");
+      if (storedDocs) {
+        try {
+          const parsed = JSON.parse(storedDocs);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setDocuments(parsed);
+          }
+        } catch (e) {
+          console.error("Error loading stored documents:", e);
+        }
+      }
+
+      // If Firebase environment variables are provided (on Vercel or locally), fetch live cloud data
+      if (isFirebaseConfigured()) {
+        getFirestoreCollection<Announcement>("announcements", INITIAL_ANNOUNCEMENTS).then((data) => {
+          if (data && data.length > 0) setAnnouncements(data);
+        });
+        getFirestoreCollection<ProjectItem>("projects", projectsData).then((data) => {
+          if (data && data.length > 0) setProjects(data);
+        });
+        getFirestoreCollection<MagazineItem>("magazines", magazinesData).then((data) => {
+          if (data && data.length > 0) setMagazines(data);
+        });
+        getFirestoreCollection<DocumentItem>("documents", initialDocumentsData).then((docs) => {
+          if (docs && docs.length > 0) {
+            setDocuments(docs);
+            localStorage.setItem("uwu_leos_documents", JSON.stringify(docs));
+          }
+        });
+        getFirestoreCollection<MemberApplicant>("membership_applicants", INITIAL_MEMBERS).then((data) => {
+          if (data && data.length > 0) setMembers(data);
+        });
+      }
     }
   }, []);
+
+  const saveDocuments = (newDocs: DocumentItem[]) => {
+    setDocuments(newDocs);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("uwu_leos_documents", JSON.stringify(newDocs));
+    }
+  };
 
   // Handle Login Authentication
   const handleLogin = (e: React.FormEvent) => {
@@ -299,6 +373,80 @@ export default function AdminPage() {
     showToast("Logged out of Admin Portal.");
   };
 
+  // Document Handlers
+  const handleCreateOrUpdateDocument = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDocTitle || !newDocDriveUrl) return;
+
+    if (editingDoc) {
+      const updatedDoc = {
+        ...editingDoc,
+        title: newDocTitle,
+        category: newDocCategory,
+        format: newDocFormat,
+        size: newDocSize || "1.0 MB",
+        driveUrl: newDocDriveUrl,
+        description: newDocDescription,
+        updatedAt: "Updated Just Now",
+      };
+      const updated = documents.map((doc) => (doc.id === editingDoc.id ? updatedDoc : doc));
+      saveDocuments(updated);
+      saveFirestoreDoc("documents", editingDoc.id, updatedDoc);
+      showToast("Official document updated successfully!");
+    } else {
+      const newEntry: DocumentItem = {
+        id: `doc-${Date.now()}`,
+        title: newDocTitle,
+        category: newDocCategory,
+        format: newDocFormat,
+        size: newDocSize || "1.0 MB",
+        driveUrl: newDocDriveUrl,
+        description: newDocDescription,
+        updatedAt: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+      };
+      saveDocuments([newEntry, ...documents]);
+      saveFirestoreDoc("documents", newEntry.id, newEntry);
+      showToast("New official document published with Google Drive link!");
+    }
+
+    setIsDocumentModalOpen(false);
+    setEditingDoc(null);
+    setNewDocTitle("");
+    setNewDocCategory("Governance & Statutes");
+    setNewDocFormat("PDF Document");
+    setNewDocSize("");
+    setNewDocDriveUrl("");
+    setNewDocDescription("");
+  };
+
+  const handleOpenEditDoc = (doc: DocumentItem) => {
+    setEditingDoc(doc);
+    setNewDocTitle(doc.title);
+    setNewDocCategory(doc.category);
+    setNewDocFormat(doc.format);
+    setNewDocSize(doc.size);
+    setNewDocDriveUrl(doc.driveUrl);
+    setNewDocDescription(doc.description);
+    setIsDocumentModalOpen(true);
+  };
+
+  const handleDeleteDocument = (id: string) => {
+    const filtered = documents.filter((d) => d.id !== id);
+    saveDocuments(filtered);
+    deleteFirestoreDoc("documents", id);
+    showToast("Official document removed.");
+  };
+
+  const handleUpdateDocDriveUrl = (docId: string) => {
+    const updatedUrl = driveUrlDocEdits[docId];
+    if (!updatedUrl) return;
+
+    const updated = documents.map((d) => (d.id === docId ? { ...d, driveUrl: updatedUrl } : d));
+    saveDocuments(updated);
+    saveFirestoreDoc("documents", docId, { driveUrl: updatedUrl });
+    showToast("Document Google Drive link updated!");
+  };
+
   // Update Magazine Google Drive URL
   const handleUpdateDriveUrl = (magId: string) => {
     const updatedUrl = driveUrlEdits[magId];
@@ -307,6 +455,7 @@ export default function AdminPage() {
     setMagazines(
       magazines.map((m) => (m.id === magId ? { ...m, driveUrl: updatedUrl } : m))
     );
+    saveFirestoreDoc("magazines", magId, { driveUrl: updatedUrl });
     showToast("Google Drive link updated successfully!");
   };
 
@@ -327,6 +476,7 @@ export default function AdminPage() {
     };
 
     setAnnouncements([newEntry, ...announcements]);
+    saveFirestoreDoc("announcements", newEntry.id, newEntry);
     setIsAnnouncementModalOpen(false);
     setNewAnnTitle("");
     setNewAnnSummary("");
@@ -355,6 +505,7 @@ export default function AdminPage() {
     };
 
     setProjects([newEntry, ...projects]);
+    saveFirestoreDoc("projects", newEntry.id, newEntry);
     setIsProjectModalOpen(false);
     setNewProjTitle("");
     setNewProjSummary("");
@@ -383,6 +534,7 @@ export default function AdminPage() {
     };
 
     setMagazines([newEntry, ...magazines]);
+    saveFirestoreDoc("magazines", newEntry.id, newEntry);
     setIsMagazineModalOpen(false);
     setNewMagTitle("");
     setNewMagEdition("");
@@ -394,6 +546,7 @@ export default function AdminPage() {
 
   const handleDeleteMagazine = (id: string) => {
     setMagazines(magazines.filter((m) => m.id !== id));
+    deleteFirestoreDoc("magazines", id);
     showToast("Magazine issue removed.");
   };
 
@@ -423,6 +576,7 @@ export default function AdminPage() {
     };
 
     setMembers([newEntry, ...members]);
+    saveFirestoreDoc("membership_applicants", newEntry.id, newEntry);
     setIsMemberModalOpen(false);
     setNewMemName("");
     setNewMemEmail("");
@@ -434,16 +588,19 @@ export default function AdminPage() {
 
   const handleUpdateMemberStatus = (id: string, newStatus: MemberApplicant["status"]) => {
     setMembers(members.map((m) => (m.id === id ? { ...m, status: newStatus } : m)));
+    saveFirestoreDoc("membership_applicants", id, { status: newStatus });
     showToast(`Applicant status updated to ${newStatus.toUpperCase()}`);
   };
 
   const handleDeleteAnnouncement = (id: string) => {
     setAnnouncements(announcements.filter((a) => a.id !== id));
+    deleteFirestoreDoc("announcements", id);
     showToast("Announcement removed.");
   };
 
   const handleDeleteProject = (id: string) => {
     setProjects(projects.filter((p) => p.id !== id));
+    deleteFirestoreDoc("projects", id);
     showToast("Project removed.");
   };
 
@@ -480,6 +637,14 @@ export default function AdminPage() {
     const matchesStatus = memberStatusFilter === "all" || m.status === memberStatusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const filteredDocumentsList = documents.filter(
+    (d) =>
+      d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.format.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // If checking session on initial load, show minimal spinner
   if (isCheckingAuth) {
@@ -652,6 +817,25 @@ export default function AdminPage() {
 
             {/* Officer Profile & Sign Out Button */}
             <div className="flex items-center gap-2 sm:gap-3">
+              {/* Firebase Cloud Status Indicator */}
+              {isFirebaseConfigured() ? (
+                <div
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold"
+                  title="Firebase cloud database is connected and active"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span>Firebase Cloud Active</span>
+                </div>
+              ) : (
+                <div
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 text-xs font-semibold"
+                  title="Local storage mode. Add Firebase environment variables in Vercel to sync cloud."
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                  <span>Local Mode (Connect Firebase in Vercel)</span>
+                </div>
+              )}
+
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-xs">
                 <UserCheck className="w-3.5 h-3.5 text-[#003B99]" />
                 <span className="font-bold text-slate-700">Officer Admin</span>
@@ -742,6 +926,18 @@ export default function AdminPage() {
                 <Users className="w-3.5 h-3.5" />
                 <span>Membership Applicants ({members.length})</span>
               </button>
+
+              <button
+                onClick={() => { setActiveTab("documents"); setSearchQuery(""); }}
+                className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                  activeTab === "documents"
+                    ? "bg-[#003B99] text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Documents &amp; Forms ({documents.length})</span>
+              </button>
             </nav>
           </div>
         </div>
@@ -766,7 +962,7 @@ export default function AdminPage() {
                   Officer Management Hub
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Manage club circulars, add new community projects, update magazine Google Drive links, and review undergraduate membership applicants.
+                  Manage club circulars, add new community projects, update magazine Google Drive links, review undergraduate membership applicants, and manage official forms.
                 </p>
               </div>
 
@@ -786,6 +982,22 @@ export default function AdminPage() {
                   <span>+ Project</span>
                 </button>
                 <button
+                  onClick={() => {
+                    setEditingDoc(null);
+                    setNewDocTitle("");
+                    setNewDocCategory("Governance & Statutes");
+                    setNewDocFormat("PDF Document");
+                    setNewDocSize("");
+                    setNewDocDriveUrl("");
+                    setNewDocDescription("");
+                    setIsDocumentModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5 text-[#F5A800]" />
+                  <span>+ Document Form</span>
+                </button>
+                <button
                   onClick={() => setIsMagazineModalOpen(true)}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#003B99] hover:bg-[#002D7A] text-white text-xs font-bold shadow-xs transition-colors"
                 >
@@ -796,7 +1008,7 @@ export default function AdminPage() {
             </div>
 
             {/* Key Metrics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div
                 onClick={() => setActiveTab("announcements")}
                 className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs hover:border-blue-200 hover:shadow-xs transition-all cursor-pointer group"
@@ -844,6 +1056,23 @@ export default function AdminPage() {
                 </div>
                 <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
                   <span>Manage Drive Links</span>
+                  <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </div>
+
+              <div
+                onClick={() => setActiveTab("documents")}
+                className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs hover:border-blue-200 hover:shadow-xs transition-all cursor-pointer group"
+              >
+                <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
+                  <span className="font-semibold">Official Documents</span>
+                  <FileText className="w-4 h-4 text-[#F5A800]" />
+                </div>
+                <div className="text-3xl font-extrabold text-slate-900 font-heading">
+                  {documents.length}
+                </div>
+                <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+                  <span>Google Drive Links</span>
                   <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </div>
@@ -1380,6 +1609,151 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* ===================================================================== */}
+        {/* 6. DOCUMENTS & FORMS MANAGEMENT TAB                                  */}
+        {/* ===================================================================== */}
+        {activeTab === "documents" && (
+          <div className="space-y-6">
+            
+            {/* Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h2 className="text-xl font-extrabold text-slate-900 font-heading">
+                  Administrative Documents &amp; Official Forms
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Manage official templates, club constitution, and administrative guidelines with Google Drive links synced to /brand-and-forms.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => {
+                    setEditingDoc(null);
+                    setNewDocTitle("");
+                    setNewDocCategory("Governance & Statutes");
+                    setNewDocFormat("PDF Document");
+                    setNewDocSize("");
+                    setNewDocDriveUrl("");
+                    setNewDocDescription("");
+                    setIsDocumentModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#003B99] hover:bg-[#002D7A] text-white text-xs font-bold shadow-xs whitespace-nowrap transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Official Document</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Document Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {filteredDocumentsList.map((doc) => {
+                const currentEditUrl = driveUrlDocEdits[doc.id] !== undefined ? driveUrlDocEdits[doc.id] : doc.driveUrl;
+
+                return (
+                  <div
+                    key={doc.id}
+                    className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all"
+                  >
+                    <div className="space-y-3">
+                      
+                      {/* Top Badges */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="inline-block px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-[#003B99] border border-blue-200">
+                          {doc.category}
+                        </span>
+                        <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                          <span>{doc.format}</span>
+                          <span>•</span>
+                          <span>{doc.size}</span>
+                        </div>
+                      </div>
+
+                      {/* Title & Description */}
+                      <div>
+                        <h3 className="font-heading font-extrabold text-base text-slate-900 leading-snug">
+                          {doc.title}
+                        </h3>
+                        <p className="text-xs text-slate-500 font-normal leading-relaxed mt-1.5 line-clamp-3">
+                          {doc.description}
+                        </p>
+                      </div>
+
+                      {/* Google Drive Link Manager */}
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                            <HardDrive className="w-3.5 h-3.5 text-[#003B99]" />
+                            <span>Google Drive Link</span>
+                          </span>
+                          <span className="text-slate-400 text-[10px]">{doc.updatedAt}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="url"
+                            value={currentEditUrl}
+                            onChange={(e) =>
+                              setDriveUrlDocEdits({
+                                ...driveUrlDocEdits,
+                                [doc.id]: e.target.value,
+                              })
+                            }
+                            placeholder="https://drive.google.com/file/d/..."
+                            className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#003B99]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateDocDriveUrl(doc.id)}
+                            className="px-3 py-1.5 bg-[#003B99] hover:bg-[#002D7A] text-white text-xs font-bold rounded-lg transition-colors shrink-0 shadow-2xs"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* Bottom Actions */}
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <a
+                        href={doc.driveUrl || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[#003B99] hover:underline font-bold text-xs"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Open Drive URL</span>
+                      </a>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenEditDoc(doc)}
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors inline-flex items-center gap-1"
+                        >
+                          <Edit className="w-3 h-3" />
+                          <span>Edit</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          title="Delete Document"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+        )}
+
       </main>
 
       {/* ======================================================================= */}
@@ -1855,6 +2229,145 @@ export default function AdminPage() {
                   className="px-5 py-2 rounded-xl bg-[#003B99] text-white font-bold hover:bg-[#002D7A] shadow-xs"
                 >
                   Add Record
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================================= */}
+      {/* MODAL 5: ADD / EDIT OFFICIAL DOCUMENT & DRIVE LINK                      */}
+      {/* ======================================================================= */}
+      {isDocumentModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 shadow-xl space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="font-bold text-base text-slate-900 font-heading">
+                {editingDoc ? "Edit Official Document & Drive Link" : "Publish Official Document & Drive Link"}
+              </h3>
+              <button
+                onClick={() => {
+                  setIsDocumentModalOpen(false);
+                  setEditingDoc(null);
+                }}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateOrUpdateDocument} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Document Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Project Proposal & Budget Approval Template"
+                  value={newDocTitle}
+                  onChange={(e) => setNewDocTitle(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#003B99]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Category</label>
+                  <select
+                    value={newDocCategory}
+                    onChange={(e) => setNewDocCategory(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    <option>Governance &amp; Statutes</option>
+                    <option>Membership &amp; Induction</option>
+                    <option>Project Management</option>
+                    <option>Reporting &amp; Auditing</option>
+                    <option>Safety &amp; Compliance</option>
+                    <option>Official Templates</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Format</label>
+                  <select
+                    value={newDocFormat}
+                    onChange={(e) => setNewDocFormat(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    <option>PDF Document</option>
+                    <option>DOCX Document</option>
+                    <option>PDF / DOCX</option>
+                    <option>Excel Spreadsheet</option>
+                    <option>ZIP Archive</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Approx. File Size</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 1.2 MB or 450 KB"
+                    value={newDocSize}
+                    onChange={(e) => setNewDocSize(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Status</label>
+                  <input
+                    type="text"
+                    disabled
+                    value="Synced to /brand-and-forms"
+                    className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-mono text-[11px]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Google Drive Direct Link *</label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
+                  value={newDocDriveUrl}
+                  onChange={(e) => setNewDocDriveUrl(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#003B99] font-mono text-[11px]"
+                />
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  Paste the shareable Google Drive link. Ensure permissions are set to &quot;Anyone with the link can view&quot;.
+                </span>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Document Description &amp; Instructions</label>
+                <textarea
+                  rows={3}
+                  placeholder="Explain who must fill this document and how to submit it to the Secretariat..."
+                  value={newDocDescription}
+                  onChange={(e) => setNewDocDescription(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDocumentModalOpen(false);
+                    setEditingDoc(null);
+                  }}
+                  className="px-4 py-2 rounded-xl text-slate-600 font-semibold hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-[#003B99] text-white font-bold hover:bg-[#002D7A] shadow-xs"
+                >
+                  {editingDoc ? "Update Document" : "Publish Document"}
                 </button>
               </div>
             </form>

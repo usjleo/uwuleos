@@ -64,7 +64,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/magazine" className="hover:text-white transition-colors">
-                  Leo Magazine &amp; Publications
+                  Downloads &amp; Publications
                 </Link>
               </li>
               <li>
