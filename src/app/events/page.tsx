@@ -1,81 +1,123 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useClub } from "@/context/ClubContext";
 import { Calendar, Clock, MapPin, CalendarPlus } from "lucide-react";
+import { isFirebaseConfigured, getFirestoreCollection } from "@/lib/firebase";
+
+interface EventItem {
+  id: string;
+  title: string;
+  date: string;
+  day?: string;
+  month?: string;
+  time?: string;
+  venue?: string;
+  category?: string;
+  summary?: string;
+  description?: string;
+}
+
+const INITIAL_EVENTS: EventItem[] = [
+  {
+    id: "ev-1",
+    title: "UWU Leos Annual Leadership Training & Induction 2025",
+    date: "March 28, 2025",
+    day: "28",
+    month: "MAR",
+    time: "03:30 PM - 06:30 PM",
+    venue: "Management Auditorium, UWU Campus, Badulla",
+    category: "Leadership",
+    description:
+      "Induction of prospective undergraduate members, executive leadership training, and team-building workshops.",
+  },
+  {
+    id: "ev-2",
+    title: "Project Sipnana Phase II – Monaragala School Upliftment",
+    date: "April 19, 2025",
+    day: "19",
+    month: "APR",
+    time: "08:00 AM - 04:00 PM",
+    venue: "Monaragala Rural Primary School",
+    category: "Community",
+    description:
+      "Delivering essential school stationery, conducting interactive creative workshops, and renovating library facilities for rural students.",
+  },
+  {
+    id: "ev-3",
+    title: "Uva Youth Clean-Up & Environmental Trek",
+    date: "May 10, 2025",
+    day: "10",
+    month: "MAY",
+    time: "07:00 AM - 02:00 PM",
+    venue: "Ella & Dunhinda Conservation Area",
+    category: "Environment",
+    description:
+      "Promoting eco-tourism, removing plastic waste from natural catchment areas, and installing trail conservation signage.",
+  },
+  {
+    id: "ev-4",
+    title: "Leo District 306 D10 Mid-Year Youth Summit",
+    date: "June 14, 2025",
+    day: "14",
+    month: "JUN",
+    time: "09:00 AM - 05:00 PM",
+    venue: "Provincial Council Auditorium, Badulla",
+    category: "Leadership",
+    description:
+      "Regional youth leadership congress connecting undergraduates with provincial changemakers and community leaders.",
+  },
+  {
+    id: "ev-5",
+    title: "Annual Leistic Installation & Fellowship Gala",
+    date: "July 26, 2025",
+    day: "26",
+    month: "JUL",
+    time: "04:30 PM - 09:30 PM",
+    venue: "Heritage Grand Ballroom, Bandarawela",
+    category: "Fellowship",
+    description:
+      "Official installation ceremony of the incoming Executive Board and recognition of outstanding undergraduate project leaders.",
+  },
+];
 
 export default function EventsPage() {
   const { club } = useClub();
+  const [events, setEvents] = useState<EventItem[]>(INITIAL_EVENTS);
 
-  const events = [
-    {
-      id: "ev-1",
-      title: "UWU Leos Annual Leadership Training & Induction 2025",
-      date: "March 28, 2025",
-      day: "28",
-      month: "MAR",
-      time: "03:30 PM - 06:30 PM",
-      venue: "Management Auditorium, UWU Campus, Badulla",
-      category: "Leadership",
-      description:
-        "Induction of prospective undergraduate members, executive leadership training, and team-building workshops.",
-    },
-    {
-      id: "ev-2",
-      title: "Project Sipnana Phase II – Monaragala School Upliftment",
-      date: "April 19, 2025",
-      day: "19",
-      month: "APR",
-      time: "08:00 AM - 04:00 PM",
-      venue: "Monaragala Rural Primary School",
-      category: "Community",
-      description:
-        "Delivering essential school stationery, conducting interactive creative workshops, and renovating library facilities for rural students.",
-    },
-    {
-      id: "ev-3",
-      title: "Uva Youth Clean-Up & Environmental Trek",
-      date: "May 10, 2025",
-      day: "10",
-      month: "MAY",
-      time: "07:00 AM - 02:00 PM",
-      venue: "Ella & Dunhinda Conservation Area",
-      category: "Environment",
-      description:
-        "Promoting eco-tourism, removing plastic waste from natural catchment areas, and installing trail conservation signage.",
-    },
-    {
-      id: "ev-4",
-      title: "Leo District 306 D10 Mid-Year Youth Summit",
-      date: "June 14, 2025",
-      day: "14",
-      month: "JUN",
-      time: "09:00 AM - 05:00 PM",
-      venue: "Provincial Council Auditorium, Badulla",
-      category: "Leadership",
-      description:
-        "Regional youth leadership congress connecting undergraduates with provincial changemakers and community leaders.",
-    },
-    {
-      id: "ev-5",
-      title: "Annual Leistic Installation & Fellowship Gala",
-      date: "July 26, 2025",
-      day: "26",
-      month: "JUL",
-      time: "04:30 PM - 09:30 PM",
-      venue: "Heritage Grand Ballroom, Bandarawela",
-      category: "Fellowship",
-      description:
-        "Official installation ceremony of the incoming Executive Board and recognition of outstanding undergraduate project leaders.",
-    },
-  ];
+  useEffect(() => {
+    if (isFirebaseConfigured()) {
+      getFirestoreCollection<any>("announcements", []).then((announcements) => {
+        if (announcements && announcements.length > 0) {
+          const mapped: EventItem[] = announcements.map((a, idx) => {
+            const dateParts = a.date ? a.date.split(" ") : [];
+            const month = dateParts[0] ? dateParts[0].substring(0, 3).toUpperCase() : "EVENT";
+            const day = dateParts[1] ? dateParts[1].replace(",", "") : String(idx + 1);
 
-  const getGoogleCalendarUrl = (ev: (typeof events)[0]) => {
+            return {
+              id: a.id,
+              title: a.title,
+              date: a.date || "2025",
+              day: day || "28",
+              month: month || "MAR",
+              time: a.time || "03:30 PM - 06:30 PM",
+              venue: a.scope || "UWU Campus, Badulla",
+              category: a.category || "General",
+              description: a.summary || a.description || "Official club communique and event gathering.",
+            };
+          });
+          setEvents(mapped);
+        }
+      });
+    }
+  }, []);
+
+  const getGoogleCalendarUrl = (ev: EventItem) => {
     const title = encodeURIComponent(`${ev.title} - Leo Club of UWU`);
     const details = encodeURIComponent(
-      `${ev.description}\n\nOrganized by Leo Club of Uva Wellassa University`
+      `${ev.description || ""}\n\nOrganized by Leo Club of Uva Wellassa University`
     );
-    const location = encodeURIComponent(ev.venue);
+    const location = encodeURIComponent(ev.venue || "UWU Campus");
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}`;
   };
 

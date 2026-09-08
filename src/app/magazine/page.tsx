@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import magazinesData from "@/data/magazines.json";
+import { isFirebaseConfigured, getFirestoreCollection } from "@/lib/firebase";
 import {
   BookOpen,
   Download,
@@ -19,10 +20,21 @@ import {
 } from "lucide-react";
 
 export default function MagazinePage() {
+  const [magazinesList, setMagazinesList] = useState<any[]>(magazinesData);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const filteredMagazines = magazinesData.filter((mag) => {
+  useEffect(() => {
+    if (isFirebaseConfigured()) {
+      getFirestoreCollection<any>("magazines", magazinesData).then((data) => {
+        if (data && data.length > 0) {
+          setMagazinesList(data);
+        }
+      });
+    }
+  }, []);
+
+  const filteredMagazines = magazinesList.filter((mag) => {
     const matchesSearch =
       mag.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       mag.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||

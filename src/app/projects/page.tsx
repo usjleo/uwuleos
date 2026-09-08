@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import projectsData from "@/data/projects.json";
+import { isFirebaseConfigured, getFirestoreCollection } from "@/lib/firebase";
 import {
   Search,
   MapPin,
@@ -42,12 +43,23 @@ function CategoryIcon({ name, className }: { name?: string; className?: string }
 }
 
 export default function ProjectsPage() {
+  const [projectsList, setProjectsList] = useState<any[]>(projectsData);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const categories = ["all", ...Array.from(new Set(projectsData.map((p) => p.category)))];
+  useEffect(() => {
+    if (isFirebaseConfigured()) {
+      getFirestoreCollection<any>("projects", projectsData).then((data) => {
+        if (data && data.length > 0) {
+          setProjectsList(data);
+        }
+      });
+    }
+  }, []);
 
-  const filteredProjects = projectsData.filter((p) => {
+  const categories = ["all", ...Array.from(new Set(projectsList.map((p) => p.category)))];
+
+  const filteredProjects = projectsList.filter((p) => {
     const matchesSearch =
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||

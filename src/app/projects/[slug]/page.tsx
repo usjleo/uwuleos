@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import projectsData from "@/data/projects.json";
+import { isFirebaseConfigured, getFirestoreCollection } from "@/lib/firebase";
 import {
   ArrowLeft,
   Calendar,
@@ -46,8 +47,19 @@ function CategoryIcon({ name, className }: { name?: string; className?: string }
 export default function SingleProjectPage() {
   const params = useParams();
   const slug = params?.slug as string;
+  const [projectsList, setProjectsList] = useState<any[]>(projectsData);
 
-  const project = projectsData.find((p) => p.slug === slug) || projectsData[0];
+  useEffect(() => {
+    if (isFirebaseConfigured()) {
+      getFirestoreCollection<any>("projects", projectsData).then((data) => {
+        if (data && data.length > 0) {
+          setProjectsList(data);
+        }
+      });
+    }
+  }, []);
+
+  const project = projectsList.find((p) => p.slug === slug) || projectsData.find((p) => p.slug === slug) || projectsList[0];
 
   return (
     <div className="min-h-screen bg-[#FAFAFC] text-slate-900">

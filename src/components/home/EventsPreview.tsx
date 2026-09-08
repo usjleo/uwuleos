@@ -1,12 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import CyanBar from "@/components/ui/CyanBar";
 import { ArrowRight, Calendar, ArrowUpRight } from "lucide-react";
 import { useClub } from "@/context/ClubContext";
+import { isFirebaseConfigured, getFirestoreCollection } from "@/lib/firebase";
 
-const NOTICES = [
+interface NoticeItem {
+  id: string;
+  ref?: string;
+  date: string;
+  tag?: string;
+  category?: string;
+  priority?: string;
+  title: string;
+  summary: string;
+  issuer?: string;
+  scope?: string;
+  link?: string;
+  linkUrl?: string;
+}
+
+const INITIAL_NOTICES: NoticeItem[] = [
   {
     id: "notice-1",
     ref: "UWU/LEO/2025-01",
@@ -51,6 +67,17 @@ const NOTICES = [
 
 export default function EventsPreview() {
   const { club } = useClub();
+  const [notices, setNotices] = useState<NoticeItem[]>(INITIAL_NOTICES);
+
+  useEffect(() => {
+    if (isFirebaseConfigured()) {
+      getFirestoreCollection<NoticeItem>("announcements", INITIAL_NOTICES).then((items) => {
+        if (items && items.length > 0) {
+          setNotices(items.slice(0, 4));
+        }
+      });
+    }
+  }, []);
 
   return (
     <section className="py-14 sm:py-20 lg:py-24 bg-[#F4F6FA] border-t border-slate-200/80">
@@ -79,7 +106,7 @@ export default function EventsPreview() {
 
         {/* Balanced 2x2 Equal Grid: 4 Proportional Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-          {NOTICES.map((notice) => (
+          {notices.map((notice) => (
             <article
               key={notice.id}
               className="bg-white rounded-xl border border-slate-200/90 p-5 sm:p-7 flex flex-col justify-between shadow-xs hover:border-slate-300 hover:shadow-md transition-all duration-200 group"
@@ -88,7 +115,7 @@ export default function EventsPreview() {
                 {/* Header Meta */}
                 <div className="flex items-center justify-between gap-2 pb-3.5 mb-3.5 border-b border-slate-100">
                   <span className="text-[10px] sm:text-[11px] font-mono font-bold text-[#003B99] uppercase tracking-wider">
-                    {notice.tag}
+                    {notice.tag || notice.category || "Official Notice"}
                   </span>
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
                     <Calendar className="w-3.5 h-3.5 text-leo-cyan" />
@@ -98,7 +125,7 @@ export default function EventsPreview() {
 
                 {/* Headline */}
                 <h3 className="font-heading font-extrabold text-base sm:text-lg text-[#111827] group-hover:text-[#003B99] transition-colors leading-snug">
-                  <Link href={notice.link}>
+                  <Link href={notice.linkUrl || notice.link || "/events"}>
                     {notice.title}
                   </Link>
                 </h3>
@@ -112,11 +139,11 @@ export default function EventsPreview() {
               {/* Bottom Attribution & Action */}
               <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">
                 <span className="text-slate-500 font-medium truncate">
-                  {notice.issuer}
+                  {notice.issuer || notice.scope || "Executive Secretariat • District 306 D10"}
                 </span>
 
                 <Link
-                  href={notice.link}
+                  href={notice.linkUrl || notice.link || "/events"}
                   className="inline-flex items-center gap-1 font-bold text-[#003B99] group-hover:text-[#00A3E0] transition-colors shrink-0"
                 >
                   <span>Details</span>

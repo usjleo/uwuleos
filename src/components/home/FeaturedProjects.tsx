@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import CyanBar from "@/components/ui/CyanBar";
 import projectsData from "@/data/projects.json";
+import { isFirebaseConfigured, getFirestoreCollection } from "@/lib/firebase";
 import {
   ArrowRight,
   MapPin,
@@ -39,7 +40,19 @@ function CategoryIcon({ name, className }: { name?: string; className?: string }
 }
 
 export default function FeaturedProjects() {
-  const projects = projectsData.slice(0, 3);
+  const [projectsList, setProjectsList] = useState<any[]>(projectsData);
+
+  useEffect(() => {
+    if (isFirebaseConfigured()) {
+      getFirestoreCollection<any>("projects", projectsData).then((data) => {
+        if (data && data.length > 0) {
+          setProjectsList(data);
+        }
+      });
+    }
+  }, []);
+
+  const projects = projectsList.slice(0, 3);
   const mainProject = projects[0];
   const secondaryProjects = projects.slice(1);
 
