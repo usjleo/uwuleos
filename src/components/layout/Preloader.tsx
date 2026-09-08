@@ -88,7 +88,7 @@ export default function Preloader() {
       <div className="relative z-10 flex flex-col items-center max-w-md px-6 text-center">
         
         {/* Minimalist Emblem Lockup with sleek monochromatic rotating ring */}
-        <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center mb-6">
+        <div className="relative w-32 h-32 flex items-center justify-center mb-6">
           
           {/* Outer Minimalist Track Ring */}
           <div className="absolute inset-0 rounded-full border border-slate-200/80" />
@@ -102,12 +102,12 @@ export default function Preloader() {
             }}
           />
 
-          {/* Leo Seal Icon */}
-          <div className="relative z-10 w-18 h-18 sm:w-20 sm:h-20 flex items-center justify-center">
+          {/* Leo Seal Icon with generous clearance */}
+          <div className="relative z-10 w-20 h-20 flex items-center justify-center shrink-0">
             <img
               src="/logos/uwu-leo-seal.png"
               alt="Leo Club of UWU Seal"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain select-none"
             />
           </div>
         </div>
