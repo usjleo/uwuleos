@@ -17,31 +17,35 @@ import { useClub } from "@/context/ClubContext";
 const HERO_SLIDES = [
   {
     id: 1,
-    image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=85",
+    image: "/images/home/general-meeting.jpeg",
+    position: "center 35%",
     tag: "UVA WELLASSA UNIVERSITY",
     title: "Undergraduates Leading Through Service",
     subtitle: "Fostering leadership, fellowship, and social responsibility",
   },
   {
     id: 2,
-    image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1200&q=85",
-    tag: "PROJECT SIPNANA",
-    title: "Rural School Upliftment in Uva",
-    subtitle: "Distributing books, stationery & STEM support in Passara",
+    image: "/images/home/school-session.jpeg",
+    position: "center 30%",
+    tag: "SCHOOL OUTREACH",
+    title: "Learning Alongside Uva's Students",
+    subtitle: "Leos engaging school students with interactive sessions",
   },
   {
     id: 3,
-    image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=1200&q=85",
-    tag: "ENVIRONMENT & GREEN UVA",
-    title: "Central Highlands Reforestation Drive",
-    subtitle: "Preserving biodiversity & water catchments across Badulla",
+    image: "/images/home/community-volunteers.jpeg",
+    position: "center 55%",
+    tag: "COMMUNITY SERVICE",
+    title: "Volunteers Serving Together",
+    subtitle: "UWU Leos on the ground for community service projects",
   },
   {
     id: 4,
-    image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1200&q=85",
-    tag: "COMMUNITY HEALTHCARE",
-    title: "UWU Annual Mega Blood Donation",
-    subtitle: "Replenishing critical reserves for Badulla Teaching Hospital",
+    image: "/images/home/st-thomas-bandarawela.jpeg",
+    position: "center 45%",
+    tag: "LEO CLUB FELLOWSHIP",
+    title: "Partnering with Leo Club of S. Thomas' College",
+    subtitle: "Building bonds with fellow Leo clubs in Bandarawela",
   },
 ];
 
@@ -169,7 +173,8 @@ export default function HeroSection() {
                   <img
                     src={slide.image}
                     alt={slide.title}
-                    className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-1000"
+                    style={{ objectPosition: slide.position }}
+                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-1000"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#082E6E]/95 via-[#082E6E]/30 to-transparent" />
                 </div>
